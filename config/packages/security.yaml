@@ -1,0 +1,19 @@
+security:
+    password_hashers:
+        # auto hasher with default options for the User class (and children)
+        App\Entity\User: 'auto'
+
+        # auto hasher with custom options for all PasswordAuthenticatedUserInterface instances
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+            algorithm: 'auto'
+            cost:      15
+
+    firewalls:
+        dev:
+            security: false
+
+
+    #api_key_user_provider:
+         #entity:
+             #class: AppBundle:User
+             #property: apikey
