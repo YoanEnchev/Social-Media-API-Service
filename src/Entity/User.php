@@ -4,12 +4,24 @@ namespace App\Entity;
 
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use JsonSerializable;
 
 /**
  * @ORM\Entity(repositoryClass=UserRepository::class)
  * @ORM\Table(name="users")
+ * 
+ * @UniqueEntity(
+ *      fields={"email"},
+ *      message="This email is already taken!"
+ * )
+ * 
+ * Implementing 
  */
-class User
+class User implements UserInterface, PasswordAuthenticatedUserInterface, JsonSerializable
 {
     /**
      * @ORM\Id
@@ -43,6 +55,30 @@ class User
      */
     private $apiToken;
 
+    /**
+     * @ORM\ManyToMany(targetEntity=User::class, inversedBy="followers")
+     * @ORM\JoinTable(name="followers",
+     *      joinColumns={@ORM\JoinColumn(name="user_id", referencedColumnName="id")},
+     *      inverseJoinColumns={@ORM\JoinColumn(name="follower_id", referencedColumnName="id")}
+     * )
+     */
+    private $followers;
+
+    public function __construct(array $params)
+    {
+        $this->setFirstName($params['first_name']);
+        $this->setLastName($params['last_name']);
+        $this->setEmail($params['email']);
+        
+        // Generate unique random token
+        // mb5 - hash string
+        // uniqid - generates unique string based on timestamp. Not cryptographically secure.
+        // random_bytes - generates unique string which is cryptographically secure.
+        //
+        // So the generated string is always unique and secure.
+        $this->setApiToken(md5(uniqid() . random_bytes(30)));
+        $this->followers = new ArrayCollection();
+    }
 
     public function getId(): int
     {
@@ -85,6 +121,9 @@ class User
         return $this;
     }
 
+    /**
+     * @see PasswordAuthenticatedUserInterface
+     */
     public function getPassword(): string
     {
         return $this->password;
@@ -107,5 +146,87 @@ class User
         $this->apiToken = $apiToken;
 
         return $this;
+    }
+
+    /**
+     * Methods for implementing the UserInterface so $passwordHasher->hashPassword can be used.
+     * 
+     * Returns the roles or permissions granted to the user for security.
+     */
+    public function getRoles(): array
+    {
+        return [];
+    }
+
+    /**
+     * Returns the salt that was originally used to encode the password.
+     *
+     * {@inheritdoc}
+     */
+    public function getSalt(): ?string
+    {
+        return null;
+    }
+
+    /**
+     * Removes sensitive data from the user.
+     *
+     * {@inheritdoc}
+     */
+    public function eraseCredentials(): void
+    {
+        // if you had a plainPassword property, you'd nullify it here
+        // $this->plainPassword = null;
+    }
+
+    /** 
+     * Only for the sake of interface implementation. 
+     */
+    public function getUsername(): string
+    {
+        return $this->getUserIdentifier();
+    }
+
+    /**
+     * The public representation of the user (e.g. a username, an email address, etc.)
+     *
+     * @see UserInterface
+     */
+    public function getUserIdentifier(): string
+    {
+        return $this->email;
+    }
+
+    /**
+     * @return Collection|User[]
+     */
+    public function getFollowers(): Collection
+    {
+        return $this->followers;
+    }
+
+    public function addFollower(User $user): self
+    {
+        if (!$this->followers->contains($user)) {
+            $this->followers[] = $user;
+        }
+
+        return $this;
+    }
+    public function removeFollower(User $user): self
+    {
+        $this->followers->removeElement($user);
+        
+        return $this;
+    }
+
+    public function jsonSerialize()
+    {
+        return [
+            'id' => $this->id,
+            'email' => $this->email,
+            'first_name' => $this->firstName,
+            'last_name'=> $this->lastName
+        ];
     }
 }

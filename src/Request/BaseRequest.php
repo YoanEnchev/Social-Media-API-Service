@@ -11,35 +11,48 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 // An alternative for such validation could be https://symfony.com/doc/5.3/validation.html.
 abstract class BaseRequest
 {
-    protected ValidatorInterface $validator;
+    protected array $errors;
 
-    public function __construct(ValidatorInterface $validator)
+    public function __construct(array $requestParams, ValidatorInterface $validator)
     {
-        $this->validator = $validator;
-
         // Populate fields with request properties
-        foreach (Request::createFromGlobals()->toArray() as $property => $value) {
+        foreach ($requestParams as $propertySnakeCase => $value) {
+
+            // Convert property's name from snake_case to camelCase:
+            $propertyCamelCase = lcfirst(str_replace('_', '', ucwords($propertySnakeCase, '_')));
             
             // So only defined properties are validated.
-            if (property_exists($this, $property)) {
-                $this->{$property} = $value;
+            if (property_exists($this, $propertyCamelCase)) {
+                $this->{$propertyCamelCase} = $value;
             }
         }
-    }
 
-    public function validate(): array
-    {
+        // Validate the populated parameters and store errors:
         $result = [];
 
         /** @var \Symfony\Component\Validator\ConstraintViolation  */
-        foreach ($this->validator->validate($this) as $errMessage) {
-            $result['errors'][] = [
-                'property' => $errMessage->getPropertyPath(),
+        foreach ($validator->validate($this) as $errMessage) {
+    
+            $property = $errMessage->getPropertyPath();
+
+            $result[] = [
+                'property' => $property,
                 'value' => $errMessage->getInvalidValue(),
-                'message' => $errMessage->getMessage(),
+                'message' => 'Invalid value for ' . $property . '. ' . $errMessage->getMessage()
             ];
         }
 
-        return $result;
+        $this->errors = $result;
+    }
+
+    public function hasErrors(): bool
+    {
+        return count($this->errors) > 0;
+    }
+
+    // Make sure this method is used only if hasErrors() is true.
+    public function getFirstErrorMessage(): string
+    {
+        return $this->errors[0]['message'];
     }
 }

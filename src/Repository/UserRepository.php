@@ -21,6 +21,15 @@ class UserRepository extends ServiceEntityRepository
         parent::__construct($registry, User::class);
     }
 
+    public function findOneByApiToken($apiToken): ?User
+    {
+        return $this->createQueryBuilder('u')
+            ->andWhere('u.apiToken = :val')
+            ->setParameter('val', $apiToken)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
     public function add(User $entity, bool $flush = false): void
     {
         $this->getEntityManager()->persist($entity);
@@ -28,6 +37,16 @@ class UserRepository extends ServiceEntityRepository
         if ($flush) {
             $this->getEntityManager()->flush();
         }
+    }
+
+    public function searchByNames(string $term): array
+    {
+        return $this->createQueryBuilder('u')
+            ->where('u.firstName LIKE :term')
+            ->orwhere('u.lastName LIKE :term')
+            ->setParameter('term', "%$term%")
+            ->getQuery()
+            ->getResult();
     }
 
     public function remove(User $entity, bool $flush = false): void

@@ -10,7 +10,7 @@ class HomeController extends AbstractController
 {
  
     /**
-     * @Route("/", methods={"GET"})
+     * @Route("/", methods={"GET"}, name="home")
      *
      * It's only purpose is to check if server is up through the browser.
      */

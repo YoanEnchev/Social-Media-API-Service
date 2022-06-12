@@ -1,4 +1,7 @@
 security:
+
+    enable_authenticator_manager: true
+
     password_hashers:
         # auto hasher with default options for the User class (and children)
         App\Entity\User: 'auto'
@@ -8,12 +11,26 @@ security:
             algorithm: 'auto'
             cost:      15
 
+    providers:
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: email
+
     firewalls:
         dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
+        main:
+            lazy: true
+            #anonymous: true
+            provider: app_user_provider
 
-    #api_key_user_provider:
-         #entity:
-             #class: AppBundle:User
-             #property: apikey
+            json_login:
+                check_path: app_login
+                username_path: email
+                password_path: password
+
+            custom_authenticators:
+                - App\Security\ApiKeyAuthenticator

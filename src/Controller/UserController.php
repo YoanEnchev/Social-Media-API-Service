@@ -3,36 +3,21 @@
 namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\HttpFoundation\Request;
-use App\Requests\RegisterRequest;
+use Symfony\Component\HttpFoundation\Response;
+use Doctrine\Persistence\ManagerRegistry;
+use App\Entity\User;
 
 class UserController extends AbstractController
 {
  
     /**
-     * @Route("/api/register", methods={"POST"})
+     * @Route("/api/search/{term}", methods={"POST"})
      */
-    public function register(Request $request): JsonResponse
+    public function search(string $term, ManagerRegistry $doctrine): Response
     {
-        $params = $request->request->all();
-        var_dump([$this->get('validator')]);
         return $this->json([
-            'message' => 'Welcome to your new controller!',
-            'path' => 'src/Controller/UserController.php',
-        ]);
-        return 'xx';
-        return $this->json([$params]);
-
-        $request->validate();
-        
-        $username = $params['username'];
-        $password = $params['password'];
-
-        return $this->json([
-            'message' => 'Welcome to your new controller!',
-            'path' => 'src/Controller/UserController.php',
-        ]);
+            'users' => $doctrine->getRepository(User::class)->searchByNames($term)
+        ], 200);
     }
 }
