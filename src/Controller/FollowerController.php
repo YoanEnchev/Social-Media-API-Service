@@ -8,28 +8,42 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use App\Controller\TokenAuthenticatedController;
 use App\Entity\User;
+use App\Helper\RequestParamsGenerator;
 use Doctrine\Persistence\ManagerRegistry;
-
+use \GuzzleHttp\Client;
+use \GuzzleHttp\Exception\RequestException; 
 
 class FollowerController extends AbstractController implements TokenAuthenticatedController
 {
     /**
      * @Route("/api/follow/{userId}", methods={"POST"})
      */
-    public function sendFollowInvitation(Request $request, int $userId): JsonResponse
+    public function sendFollowInvitation(Request $request, ManagerRegistry $doctrine, int $userId): JsonResponse
     {   
-        $followerID = $request->attributes->get('api_token_user')->getId();
+        $follower = $request->attributes->get('api_token_user');
         $userToFollow = $doctrine->getRepository(User::class)->find($userId);
 
-        if($userToFollow === null || $userToFollow->getId() === $followerID) {
+        if($userToFollow === null || $userToFollow->getId() === $follower->getId() || $userToFollow->getFollowers()->contains($follower)) {
 
             return $this->json([
                 'message' => 'Invalid user to follow.',
             ], 400);
         }
 
-        // TODO: Send request to notification service for
-        // creating invitation notification if such doesn't exist already.
+        // Send request to notification service for creating invitation notification if such doesn't exist already.
+        $client = new Client();
+        
+        try {
+            $response = $client->request(
+                'POST', $this->getParameter('app.notificationServiceBaseUrl') . 'api/notification',
+                RequestParamsGenerator::generateNotificationRequest('follow_request', $follower, $userToFollow, $this->getParameter('app.notificationMicroserviceSecret'))
+            );
+        } catch(RequestException $ex) {
+            
+            return $this->json([
+                'message' => 'Service is not available.',
+            ], 503);
+        }
 
         return $this->json([
             'message' => 'Sent invitation.',
