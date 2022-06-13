@@ -4,7 +4,7 @@ namespace App\Entity;
 
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\PersistentCollection;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -77,7 +77,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JsonSer
         //
         // So the generated string is always unique and secure.
         $this->setApiToken(md5(uniqid() . random_bytes(30)));
-        $this->followers = new ArrayCollection();
+        $this->followers = new PersistentCollection();
     }
 
     public function getId(): int
@@ -198,9 +198,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, JsonSer
     }
 
     /**
-     * @return Collection|User[]
+     * @return PersistentCollection|User[]
      */
-    public function getFollowers(): Collection
+    public function getFollowers(): PersistentCollection
     {
         return $this->followers;
     }

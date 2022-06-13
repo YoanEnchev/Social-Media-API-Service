@@ -15,7 +15,7 @@ use App\Entity\User;
 class RegisterController extends AbstractController
 {
     /**
-     * @Route("/api/register", methods={"POST"}, name="app_register")
+     * @Route("/api/register", methods={"POST"})
      */
     public function register(Request $request, ValidatorInterface $validator, EntityManagerInterface $entityManager, UserPasswordHasherInterface $passwordHasher): JsonResponse
     {

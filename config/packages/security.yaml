@@ -31,6 +31,3 @@ security:
                 check_path: app_login
                 username_path: email
                 password_path: password
-
-            custom_authenticators:
-                - App\Security\ApiKeyAuthenticator
