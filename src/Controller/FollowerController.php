@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\Request;
 use App\Controller\TokenAuthenticatedController;
 use App\Entity\User;
 use App\Helper\RequestParamsGenerator;
+use App\Helper\ServiceResponse;
 use Doctrine\Persistence\ManagerRegistry;
 use \GuzzleHttp\Client;
 use \GuzzleHttp\Exception\RequestException; 
@@ -29,20 +30,22 @@ class FollowerController extends AbstractController implements TokenAuthenticate
                 'message' => 'Invalid user to follow.',
             ], 400);
         }
-
-        // Send request to notification service for creating invitation notification if such doesn't exist already.
-        $client = new Client();
         
         try {
-            $response = $client->request(
-                'POST', $this->getParameter('app.notificationServiceBaseUrl') . 'api/notification',
+            // Send request to notification service for creating invitation notification.
+            $client = new Client();
+            $client->request(
+                'POST', $this->getParameter('app.notificationServiceBaseUrl') . 'api/notification/follow',
                 RequestParamsGenerator::generateNotificationRequest('follow_request', $follower, $userToFollow, $this->getParameter('app.notificationMicroserviceSecret'))
             );
-        } catch(RequestException $ex) {
+        } 
+        catch(RequestException $ex) {
             
+            $processed = ServiceResponse::processException($ex);
+
             return $this->json([
-                'message' => 'Service is not available.',
-            ], 503);
+                'message' => $processed['message']
+            ], $processed['status']);
         }
 
         return $this->json([
@@ -58,8 +61,22 @@ class FollowerController extends AbstractController implements TokenAuthenticate
         $userToFollow = $request->attributes->get('api_token_user');
         $follower = $doctrine->getRepository(User::class)->find($userId);
 
-        // TODO: Send request to notification service to
-        // validate if such invitation exists
+        try {
+            // Send request to notification service for accepting follow invitation.
+            $client = new Client();
+            $client->request(
+                'POST', $this->getParameter('app.notificationServiceBaseUrl') . 'api/notification/follow',
+                RequestParamsGenerator::generateNotificationRequest('accept_follow_request', $follower, $userToFollow, $this->getParameter('app.notificationMicroserviceSecret'))
+            );
+        } 
+        catch(RequestException $ex) {
+            
+            $processed = ServiceResponse::processException($ex);
+
+            return $this->json([
+                'message' => $processed['message']
+            ], $processed['status']);
+        }
 
         $userToFollow->addFollower($follower);
 
@@ -75,12 +92,27 @@ class FollowerController extends AbstractController implements TokenAuthenticate
     /**
      * @Route("/api/follow/{userId}/reject", methods={"POST"})
      */
-    public function declineInvitation(Request $request, int $userId): JsonResponse
+    public function declineInvitation(Request $request, ManagerRegistry $doctrine, int $userId): JsonResponse
     {   
         $userToFollow = $request->attributes->get('api_token_user');
         $follower = $doctrine->getRepository(User::class)->find($userId);
 
-        // TODO: Send request to notification service for invitation decline.
+        try {
+            // Send request to notification service for accepting follow invitation.
+            $client = new Client();
+            $client->request(
+                'POST', $this->getParameter('app.notificationServiceBaseUrl') . 'api/notification/follow',
+                RequestParamsGenerator::generateNotificationRequest('decline_follow_request', $follower, $userToFollow, $this->getParameter('app.notificationMicroserviceSecret'))
+            );
+        } 
+        catch(RequestException $ex) {
+            
+            $processed = ServiceResponse::processException($ex);
+
+            return $this->json([
+                'message' => $processed['message']
+            ], $processed['status']);
+        }
 
         return $this->json([
             'message' => 'Declined invitation.',
