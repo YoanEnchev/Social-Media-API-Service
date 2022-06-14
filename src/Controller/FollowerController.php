@@ -13,6 +13,7 @@ use App\Helper\ServiceResponse;
 use Doctrine\Persistence\ManagerRegistry;
 use \GuzzleHttp\Client;
 use \GuzzleHttp\Exception\RequestException; 
+use \GuzzleHttp\Exception\ConnectException;
 
 class FollowerController extends AbstractController implements TokenAuthenticatedController
 {
@@ -98,7 +99,7 @@ class FollowerController extends AbstractController implements TokenAuthenticate
         $follower = $doctrine->getRepository(User::class)->find($userId);
 
         try {
-            // Send request to notification service for accepting follow invitation.
+            // Send request to notification service for declining follow invitation.
             $client = new Client();
             $client->request(
                 'POST', $this->getParameter('app.notificationServiceBaseUrl') . 'api/notification/follow',
@@ -127,17 +128,35 @@ class FollowerController extends AbstractController implements TokenAuthenticate
         $follower = $request->attributes->get('api_token_user');
         $userToUnfollow = $doctrine->getRepository(User::class)->find($userId);
 
-        if($userToUnfollow->getFollowers()->contains($follower)) {
-            
-            $userToUnfollow->removeFollower($follower);
-
+        if(!$userToUnfollow->getFollowers()->contains($follower)) {
             return $this->json([
-                'message' => 'Unfollowed user.',
-            ], 200);
+                'message' => 'Cannot unfollow user that is not followed.',
+            ], 400);
         }
+  
+        $userToUnfollow->removeFollower($follower);
 
+        $manager = $doctrine->getManager();
+        $manager->persist($userToUnfollow);
+        $manager->flush();
+
+        // Send async request to notification service to inform that user has unfollowed other user.
+        $client = new Client();
+        
+        try {
+            $client->request(
+                'POST', $this->getParameter('app.notificationServiceBaseUrl') . 'api/notification/follow',
+                array_merge(
+                    RequestParamsGenerator::generateNotificationRequest('cancel_follow', $follower, $userToUnfollow, $this->getParameter('app.notificationMicroserviceSecret')),
+                    [
+                        'timeout' => 1 // Guzzle does not support "fire and forget" asynchronous requests so we use timeout to avoid waiting for response.
+                    ]
+                )
+            );
+        } catch(ConnectException $e) {}
+    
         return $this->json([
-            'message' => 'Cannot unfollow user that is not followed.',
-        ], 400);
+            'message' => 'Unfollowed user.',
+        ], 200);
     }
 }

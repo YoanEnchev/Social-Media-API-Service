@@ -11,11 +11,11 @@ class RequestParamsGenerator
         return [
             'form_params' => [
                 'action_type' => $type,
-                'from_user' => [
+                'follower' => [
                     'id' => $fromUser->getId(),
                     'full_name' => $fromUser->getFullName()
                 ],
-                'to_user' => [
+                'followed' => [
                     'id' => $toUser->getId(),
                     'full_name' => $toUser->getFullName()
                 ],
