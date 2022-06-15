@@ -15,6 +15,7 @@
         "guzzlehttp/guzzle": "^7.4",
         "symfony/console": "*",
         "symfony/dotenv": "*",
+        "symfony/event-dispatcher": "^5.4",
         "symfony/flex": "^1.17|^2",
         "symfony/framework-bundle": "*",
         "symfony/password-hasher": "^5.4",

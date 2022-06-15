@@ -31,8 +31,9 @@ class TokenSubscriber implements EventSubscriberInterface
 
         if ($controller instanceof TokenAuthenticatedController) {
             
-            // api_token is supposed to be used only for POST request.
-            $apiToken = $event->getRequest()->request->get('api_token');
+            $request = $event->getRequest();
+            
+            $apiToken = $request->isMethod('GET') ? $request->query->get('api_token') : $request->get('api_token');
         
             // If exception is thrown, onAuthenticationFailure is called.
             if (null === $apiToken) {
@@ -48,7 +49,7 @@ class TokenSubscriber implements EventSubscriberInterface
             if (null === $user) {
                 throw new AccessDeniedHttpException('No user is matched by the API token.');
             }
-    
+            
             // Set attributes allows for passing data from event subscriber to controller.
             // This means that there is no need of additional SQL requests to extract the user.
             $event->getRequest()->attributes->set('api_token_user', $user);

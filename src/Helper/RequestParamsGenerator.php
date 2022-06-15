@@ -6,7 +6,17 @@ use App\Entity\User;
 
 class RequestParamsGenerator
 {
-    public static function generateNotificationRequest(string $type, User $fromUser, User $toUser, string $bearerToken): array
+    public static function generateWelcomeRequest(User $user, string $bearerToken): array
+    {
+        return [
+            'form_params' => [
+                'user_id' => $user->getId()
+            ],
+            'headers' => self::getBearerHeaderArray($bearerToken)
+        ];
+    }
+
+    public static function generateFollowRequest(string $type, User $fromUser, User $toUser, string $bearerToken): array
     {
         return [
             'form_params' => [
@@ -20,9 +30,14 @@ class RequestParamsGenerator
                     'full_name' => $toUser->getFullName()
                 ],
             ],
-            'headers' => [
-                'Authorization' => "Bearer $bearerToken"
-            ]
+            'headers' => self::getBearerHeaderArray($bearerToken)
+        ];
+    }
+
+    public static function getBearerHeaderArray(string $bearerToken): array
+    {
+        return [
+            'Authorization' => "Bearer $bearerToken"
         ];
     }
 } 

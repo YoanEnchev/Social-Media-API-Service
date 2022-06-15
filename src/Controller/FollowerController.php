@@ -12,7 +12,7 @@ use App\Helper\RequestParamsGenerator;
 use App\Helper\ServiceResponse;
 use Doctrine\Persistence\ManagerRegistry;
 use \GuzzleHttp\Client;
-use \GuzzleHttp\Exception\RequestException; 
+use \GuzzleHttp\Exception\RequestException;
 use \GuzzleHttp\Exception\ConnectException;
 
 class FollowerController extends AbstractController implements TokenAuthenticatedController
@@ -37,7 +37,7 @@ class FollowerController extends AbstractController implements TokenAuthenticate
             $client = new Client();
             $client->request(
                 'POST', $this->getParameter('app.notificationServiceBaseUrl') . 'api/notification/follow',
-                RequestParamsGenerator::generateNotificationRequest('follow_request', $follower, $userToFollow, $this->getParameter('app.notificationMicroserviceSecret'))
+                RequestParamsGenerator::generateFollowRequest('follow_request', $follower, $userToFollow, $this->getParameter('app.notificationMicroserviceSecret'))
             );
         } 
         catch(RequestException $ex) {
@@ -67,7 +67,7 @@ class FollowerController extends AbstractController implements TokenAuthenticate
             $client = new Client();
             $client->request(
                 'POST', $this->getParameter('app.notificationServiceBaseUrl') . 'api/notification/follow',
-                RequestParamsGenerator::generateNotificationRequest('accept_follow_request', $follower, $userToFollow, $this->getParameter('app.notificationMicroserviceSecret'))
+                RequestParamsGenerator::generateFollowRequest('accept_follow_request', $follower, $userToFollow, $this->getParameter('app.notificationMicroserviceSecret'))
             );
         } 
         catch(RequestException $ex) {
@@ -103,7 +103,7 @@ class FollowerController extends AbstractController implements TokenAuthenticate
             $client = new Client();
             $client->request(
                 'POST', $this->getParameter('app.notificationServiceBaseUrl') . 'api/notification/follow',
-                RequestParamsGenerator::generateNotificationRequest('decline_follow_request', $follower, $userToFollow, $this->getParameter('app.notificationMicroserviceSecret'))
+                RequestParamsGenerator::generateFollowRequest('decline_follow_request', $follower, $userToFollow, $this->getParameter('app.notificationMicroserviceSecret'))
             );
         } 
         catch(RequestException $ex) {
@@ -140,20 +140,20 @@ class FollowerController extends AbstractController implements TokenAuthenticate
         $manager->persist($userToUnfollow);
         $manager->flush();
 
-        // Send async request to notification service to inform that user has unfollowed other user.
+        // Send async request to notification service to produce welcome notification.
         $client = new Client();
         
         try {
             $client->request(
                 'POST', $this->getParameter('app.notificationServiceBaseUrl') . 'api/notification/follow',
                 array_merge(
-                    RequestParamsGenerator::generateNotificationRequest('cancel_follow', $follower, $userToUnfollow, $this->getParameter('app.notificationMicroserviceSecret')),
+                    RequestParamsGenerator::generateFollowRequest('cancel_follow', $follower, $userToUnfollow, $this->getParameter('app.notificationMicroserviceSecret')),
                     [
                         'timeout' => 1 // Guzzle does not support "fire and forget" asynchronous requests so we use timeout to avoid waiting for response.
                     ]
                 )
             );
-        } catch(ConnectException $e) {}
+       } catch(ConnectException $e) {}
     
         return $this->json([
             'message' => 'Unfollowed user.',

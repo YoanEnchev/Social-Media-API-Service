@@ -11,6 +11,9 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Request\RegisterRequest;
 use App\Entity\User;
+use App\Helper\RequestParamsGenerator;
+use \GuzzleHttp\Client;
+use \GuzzleHttp\Exception\ConnectException;
 
 class RegisterController extends AbstractController
 {
@@ -50,9 +53,23 @@ class RegisterController extends AbstractController
         $entityManager->persist($user);
         $entityManager->flush();
 
+        try {
+            $client = new Client();
+            $client->request(
+                'POST', $this->getParameter('app.notificationServiceBaseUrl') . 'api/notifications', [
+                    'form_params' => [
+                        'type' => 'user_registration',
+                        'user_id' => $user->getId()
+                    ],
+                    'headers' => RequestParamsGenerator::getBearerHeaderArray($this->getParameter('app.notificationMicroserviceSecret')),
+                    'timeout' => 1 // Guzzle does not support "fire and forget" asynchronous requests so we use timeout to avoid waiting for response.
+                ]
+            );
+        } catch(ConnectException $e) {}
+    
         return $this->json([
             'message' => 'Successful registration.',
-            'token' => $user->getApiToken()
+            'token' => $user->getApiToken(),
         ], 200);
     }
 }
