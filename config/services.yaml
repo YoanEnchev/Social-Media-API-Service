@@ -28,3 +28,7 @@ services:
     App\Service\RequestParamsGenerator:
         arguments:
             $notificationMicroserviceSecret: '%app.notificationMicroserviceSecret%'
+
+    App\Service\ServicesUrls:
+        arguments:
+            $notificationsBaseUrl: '%app.notificationServiceBaseUrl%'
