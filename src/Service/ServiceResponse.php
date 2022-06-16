@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Helper;
+namespace App\Service;
 
 use App\Entity\User;
 use \GuzzleHttp\Exception\RequestException; 

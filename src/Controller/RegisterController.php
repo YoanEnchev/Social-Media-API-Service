@@ -11,7 +11,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Request\RegisterRequest;
 use App\Entity\User;
-use App\Helper\RequestParamsGenerator;
+use App\Service\RequestParamsGenerator;
 use \GuzzleHttp\Client;
 use \GuzzleHttp\Exception\ConnectException;
 
@@ -20,7 +20,7 @@ class RegisterController extends AbstractController
     /**
      * @Route("/api/register", methods={"POST"})
      */
-    public function register(Request $request, ValidatorInterface $validator, EntityManagerInterface $entityManager, UserPasswordHasherInterface $passwordHasher): JsonResponse
+    public function register(Request $request, RequestParamsGenerator $requestParamsGenerator, ValidatorInterface $validator, EntityManagerInterface $entityManager, UserPasswordHasherInterface $passwordHasher): JsonResponse
     {
         $params = $request->request->all();
         $registerRequest = new RegisterRequest($params, $validator);
@@ -61,7 +61,7 @@ class RegisterController extends AbstractController
                         'type' => 'user_registration',
                         'user_id' => $user->getId()
                     ],
-                    'headers' => RequestParamsGenerator::getBearerHeaderArray($this->getParameter('app.notificationMicroserviceSecret')),
+                    'headers' => $requestParamsGenerator->getBearerHeaderArray(),
                     'timeout' => 1 // Guzzle does not support "fire and forget" asynchronous requests so we use timeout to avoid waiting for response.
                 ]
             );

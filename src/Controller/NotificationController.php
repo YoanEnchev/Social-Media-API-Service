@@ -10,8 +10,8 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Request\ChatMessageCreationRequest;
 use App\Entity\User;
-use App\Helper\RequestParamsGenerator;
-use App\Helper\ServiceResponse;
+use App\Service\RequestParamsGenerator;
+use App\Service\ServiceResponse;
 use App\Controller\TokenAuthenticatedController;
 use \GuzzleHttp\Client;
 use \GuzzleHttp\Exception\RequestException;
@@ -23,7 +23,7 @@ class NotificationController extends AbstractController implements TokenAuthenti
      * 
      * Get unseen notifications.
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, RequestParamsGenerator $requestParamsGenerator): JsonResponse
     {
         $user = $request->attributes->get('api_token_user');
         $notifications = [];
@@ -33,7 +33,7 @@ class NotificationController extends AbstractController implements TokenAuthenti
             $client = new Client();
             $notifications = $client->request(
                 'GET', $this->getParameter('app.notificationServiceBaseUrl') . 'api/notifications?user_id=' . $user->getId(), [
-                    'headers' => RequestParamsGenerator::getBearerHeaderArray($this->getParameter('app.notificationMicroserviceSecret'))
+                    'headers' => $requestParamsGenerator->getBearerHeaderArray()
                 ]
             )
             ->getBody()
@@ -56,7 +56,7 @@ class NotificationController extends AbstractController implements TokenAuthenti
      * 
      * Create chat message.
      */
-    public function createChatMessage(Request $request, ValidatorInterface $validator, EntityManagerInterface $entityManager): JsonResponse
+    public function createChatMessage(Request $request, RequestParamsGenerator $requestParamsGenerator, ValidatorInterface $validator, EntityManagerInterface $entityManager): JsonResponse
     {
         $params = $request->request->all();
         $chatMessageCreationRequest = new ChatMessageCreationRequest($params, $validator);
@@ -90,7 +90,7 @@ class NotificationController extends AbstractController implements TokenAuthenti
                         'receiver_id' => $receiverId,
                         'message_text' => $params['message_text']
                     ],
-                    'headers' => RequestParamsGenerator::getBearerHeaderArray($this->getParameter('app.notificationMicroserviceSecret'))
+                    'headers' => $requestParamsGenerator->getBearerHeaderArray()
                 ]
             );
         } 
@@ -111,7 +111,7 @@ class NotificationController extends AbstractController implements TokenAuthenti
     /**
      * @Route("/api/notifications/{id}", methods={"PATCH"})
      */
-    public function markAsRead(Request $request, int $id): JsonResponse
+    public function markAsRead(Request $request, RequestParamsGenerator $requestParamsGenerator, int $id): JsonResponse
     {
         try {
             // Mark notifications as read.
@@ -122,7 +122,7 @@ class NotificationController extends AbstractController implements TokenAuthenti
                         'type' => 'mark_as_read',
                         'user_id' => $request->attributes->get('api_token_user')->getId()
                     ],
-                    'headers' => RequestParamsGenerator::getBearerHeaderArray($this->getParameter('app.notificationMicroserviceSecret'))
+                    'headers' => $requestParamsGenerator->getBearerHeaderArray()
                 ]
             );
         } 

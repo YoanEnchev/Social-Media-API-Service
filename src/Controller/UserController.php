@@ -4,7 +4,7 @@ namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Doctrine\Persistence\ManagerRegistry;
 use App\Entity\User;
 use App\Controller\TokenAuthenticatedController;
@@ -17,8 +17,6 @@ class UserController extends AbstractController implements TokenAuthenticatedCon
      */
     public function search(string $term, ManagerRegistry $doctrine): JsonResponse
     {
-        return $this->json([
-            'users' => $doctrine->getRepository(User::class)->searchByNames($term)
-        ], 200);
+        return $this->json($doctrine->getRepository(User::class)->searchByNames($term), 200);
     }
 }

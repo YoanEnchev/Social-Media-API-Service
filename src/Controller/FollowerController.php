@@ -8,8 +8,8 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use App\Controller\TokenAuthenticatedController;
 use App\Entity\User;
-use App\Helper\RequestParamsGenerator;
-use App\Helper\ServiceResponse;
+use App\Service\RequestParamsGenerator;
+use App\Service\ServiceResponse;
 use Doctrine\Persistence\ManagerRegistry;
 use \GuzzleHttp\Client;
 use \GuzzleHttp\Exception\RequestException;
@@ -20,7 +20,7 @@ class FollowerController extends AbstractController implements TokenAuthenticate
     /**
      * @Route("/api/follow/{userId}", methods={"POST"})
      */
-    public function sendFollowInvitation(Request $request, ManagerRegistry $doctrine, int $userId): JsonResponse
+    public function sendFollowInvitation(Request $request, RequestParamsGenerator $requestParamsGenerator, ManagerRegistry $doctrine, int $userId): JsonResponse
     {   
         $follower = $request->attributes->get('api_token_user');
         $userToFollow = $doctrine->getRepository(User::class)->find($userId);
@@ -37,7 +37,7 @@ class FollowerController extends AbstractController implements TokenAuthenticate
             $client = new Client();
             $client->request(
                 'POST', $this->getParameter('app.notificationServiceBaseUrl') . 'api/notification/follow',
-                RequestParamsGenerator::generateFollowRequest('follow_request', $follower, $userToFollow, $this->getParameter('app.notificationMicroserviceSecret'))
+                $requestParamsGenerator->generateFollowRequest('follow_request', $follower, $userToFollow)
             );
         } 
         catch(RequestException $ex) {
@@ -57,7 +57,7 @@ class FollowerController extends AbstractController implements TokenAuthenticate
     /**
      * @Route("/api/follow/{userId}/accept", methods={"POST"})
      */
-    public function acceptFollowInvitation(Request $request, ManagerRegistry $doctrine, int $userId): JsonResponse
+    public function acceptFollowInvitation(Request $request, RequestParamsGenerator $requestParamsGenerator, ManagerRegistry $doctrine, int $userId): JsonResponse
     {   
         $userToFollow = $request->attributes->get('api_token_user');
         $follower = $doctrine->getRepository(User::class)->find($userId);
@@ -67,7 +67,7 @@ class FollowerController extends AbstractController implements TokenAuthenticate
             $client = new Client();
             $client->request(
                 'POST', $this->getParameter('app.notificationServiceBaseUrl') . 'api/notification/follow',
-                RequestParamsGenerator::generateFollowRequest('accept_follow_request', $follower, $userToFollow, $this->getParameter('app.notificationMicroserviceSecret'))
+                $requestParamsGenerator->generateFollowRequest('accept_follow_request', $follower, $userToFollow)
             );
         } 
         catch(RequestException $ex) {
@@ -93,7 +93,7 @@ class FollowerController extends AbstractController implements TokenAuthenticate
     /**
      * @Route("/api/follow/{userId}/reject", methods={"POST"})
      */
-    public function declineInvitation(Request $request, ManagerRegistry $doctrine, int $userId): JsonResponse
+    public function declineInvitation(Request $request, RequestParamsGenerator $requestParamsGenerator, ManagerRegistry $doctrine, int $userId): JsonResponse
     {   
         $userToFollow = $request->attributes->get('api_token_user');
         $follower = $doctrine->getRepository(User::class)->find($userId);
@@ -103,7 +103,7 @@ class FollowerController extends AbstractController implements TokenAuthenticate
             $client = new Client();
             $client->request(
                 'POST', $this->getParameter('app.notificationServiceBaseUrl') . 'api/notification/follow',
-                RequestParamsGenerator::generateFollowRequest('decline_follow_request', $follower, $userToFollow, $this->getParameter('app.notificationMicroserviceSecret'))
+                $requestParamsGenerator->generateFollowRequest('decline_follow_request', $follower, $userToFollow)
             );
         } 
         catch(RequestException $ex) {
@@ -123,7 +123,7 @@ class FollowerController extends AbstractController implements TokenAuthenticate
     /**
      * @Route("/api/follow/{userId}", methods={"DELETE"})
      */
-    public function unfollowUser(Request $request, ManagerRegistry $doctrine, int $userId): JsonResponse
+    public function unfollowUser(Request $request, RequestParamsGenerator $requestParamsGenerator, ManagerRegistry $doctrine, int $userId): JsonResponse
     {
         $follower = $request->attributes->get('api_token_user');
         $userToUnfollow = $doctrine->getRepository(User::class)->find($userId);
@@ -147,7 +147,7 @@ class FollowerController extends AbstractController implements TokenAuthenticate
             $client->request(
                 'POST', $this->getParameter('app.notificationServiceBaseUrl') . 'api/notification/follow',
                 array_merge(
-                    RequestParamsGenerator::generateFollowRequest('cancel_follow', $follower, $userToUnfollow, $this->getParameter('app.notificationMicroserviceSecret')),
+                    $requestParamsGenerator->generateFollowRequest('cancel_follow', $follower, $userToUnfollow),
                     [
                         'timeout' => 1 // Guzzle does not support "fire and forget" asynchronous requests so we use timeout to avoid waiting for response.
                     ]
